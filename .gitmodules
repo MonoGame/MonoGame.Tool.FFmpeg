@@ -1,0 +1,6 @@
+[submodule "MonoGame.Tool.BuildScripts"]
+	path = MonoGame.Tool.BuildScripts
+	url = https://github.com/AristurtleDev/MonoGame.Tool.BuildScripts.git
+[submodule "buildscripts"]
+	path = buildscripts
+	url = https://github.com/AristurtleDev/MonoGame.Tool.BuildScripts.git
