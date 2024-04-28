@@ -4,3 +4,6 @@
 [submodule "buildscripts"]
 	path = buildscripts
 	url = https://github.com/MonoGame/MonoGame.Tool.BuildScripts.git
+[submodule "ffmpeg"]
+	path = ffmpeg
+	url = https://github.com/ffmpeg/ffmpeg.git
