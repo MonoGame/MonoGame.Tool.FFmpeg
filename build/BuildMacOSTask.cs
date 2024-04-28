@@ -1,42 +1,92 @@
+using System.Runtime.InteropServices;
+
 namespace BuildScripts;
 
 [TaskName("Build macOS")]
 [IsDependentOn(typeof(PrepTask))]
 [IsDependeeOf(typeof(BuildToolTask))]
-public sealed class BuildMacOSTask : FrostingTask<BuildContext>
+public sealed class BuildMacOSTask : BuildTaskBase
 {
     public override bool ShouldRun(BuildContext context) => context.IsRunningOnMacOs();
 
     public override void Run(BuildContext context)
     {
-        //  Patch vcpkg files for mac build
-        context.StartProcess("patch", "./buildscripts/vcpkg/ports/ffmpeg/portfile.cmake ./patches/ffmpeg-portfile.patch");
-        context.StartProcess("patch", "./buildscripts/vcpkg/triplets/x64-osx.cmake ./patches/x64-osx-cmake.patch");
-        context.StartProcess("patch", "./buildscripts/vcpkg/triplets/arm64-osx.cmake ./patches/arm64-osx-cmake.patch");
+        // Determine which mac architecture(s) to build for.
+        var buildx8664 = context.IsUniversalBinary || RuntimeInformation.ProcessArchitecture is not Architecture.Arm or Architecture.Arm64;
+        var buildArm64 = context.IsUniversalBinary || RuntimeInformation.ProcessArchitecture is Architecture.Arm or Architecture.Arm64;
 
-        //  Bootstrap vcpkg
-        context.StartProcess("buildscripts/vcpkg/bootstrap-vcpkg.sh");
+        // Absolute path to the artifact directory is needed for flags since they don't allow relative path
+        var absoluteArtifactDir = context.MakeAbsolute(new DirectoryPath(context.ArtifactsDir));
 
-        //  Perform x64-osx build
-        context.StartProcess("buildscripts/vcpkg/vcpkg", "install ffmpeg[mp3lame,vorbis]:x64-osx");
+        // Generate common build directory paths for each architectures build artifacts
+        var x866BuildDirectory = $"{absoluteArtifactDir}/osx-x86_64";
+        var arm64BuildDirectory = $"{absoluteArtifactDir}/osx-arm64";
 
-        //  Perform arm64-osx build
-        context.StartProcess("buildscripts/vcpkg/vcpkg", "install ffmpeg[mp3lame,vorbis]:arm64-osx");
-
-        //  Use lipo to combine into universal binary and output in the artifacts directory
-        string x64 = "buildscripts/vcpkg/installed/x64-osx/tools/ffmpeg/ffmpeg";
-        string arm64 = "buildscripts/vcpkg/installed/arm64-osx/tools/ffmpeg/ffmpeg";
-        context.StartProcess("lipo", new ProcessSettings()
+        if (buildx8664)
         {
-            Arguments = $"-create {x64} {arm64} -output {context.ArtifactsDir}/ffmpeg"
-        });
-    }
+            // Create the build settings used by each library build
+            var buildSettings = new BuildSettings()
+            {
+                ShellCommand = "zsh",
+                PrefixFlag = x866BuildDirectory,
+                PkgConfigPath = $"{x866BuildDirectory}/lib/pkgconfig",
+                HostFlag = "x86_64-apple-darwin",
+                CFlags = $"-w -arch x86_64 -I{x866BuildDirectory}/include",
+                CPPFlags = $"-arch x86_64 -I{x866BuildDirectory}/include",
+                CXXFlags = "-arch x86_84",
+                LDFlags = $"-arch x86_64 -L{x866BuildDirectory}/lib"
+            };
 
-    public override void Finally(BuildContext context)
-    {
-        //  Ensure we revert the patched files so when running/testing locally they are put back in original state
-        context.StartProcess("patch", "-R ./buildscripts/vcpkg/ports/ffmpeg/portfile.cmake ./patches/ffmpeg-portfile.patch");
-        context.StartProcess("patch", "-R ./buildscripts/vcpkg/triplets/x64-osx.cmake ./patches/x64-osx-cmake.patch");
-        context.StartProcess("patch", "-R ./buildscripts/vcpkg/triplets/arm64-osx.cmake ./patches/arm64-osx-cmake.patch");
+            // Get the configuration flags that will be used for the FFMpeg build
+            var x8664FFMpegConfigureFlags = GetFFMpegConfigureFlags(context, "osx-x86_64");
+
+            // Build each library in correct order
+            BuildOgg(context, buildSettings);
+            BuildVorbis(context, buildSettings);
+            BuildLame(context, buildSettings);
+            BuildFFMpeg(context, buildSettings, x8664FFMpegConfigureFlags);
+        }
+
+        if (buildArm64)
+        {
+            // Create the build settings used by each library build
+            var buildSettings = new BuildSettings()
+            {
+                ShellCommand = "zsh",
+                PrefixFlag = arm64BuildDirectory,
+                PkgConfigPath = $"{arm64BuildDirectory}/lib/pkgconfig",
+                HostFlag = "aarch64-apple-darwin",
+                CFlags = $"-w -arch arm64 -I{arm64BuildDirectory}/include",
+                CPPFlags = $"-arch arm64 -I{arm64BuildDirectory}/include",
+                CXXFlags = "-arch arm64",
+                LDFlags = $"-arch arm64 -L{arm64BuildDirectory}/lib"
+            };
+
+            // Get the configuration flags that will be used for the FFMpeg build
+            var arm64FFMpegConfigureFlags = GetFFMpegConfigureFlags(context, "osx-arm64");
+
+            BuildOgg(context, buildSettings);
+            BuildVorbis(context, buildSettings);
+            BuildLame(context, buildSettings);
+            BuildFFMpeg(context, buildSettings, arm64FFMpegConfigureFlags);
+        }
+
+        // Move the build binary from the build directory to the artifact directory.
+        // If this is a universal build, we'll need to combine both binaries using lipo and output the result of that.
+        if (buildx8664 && buildArm64)
+        {
+            context.StartProcess("lipo", new ProcessSettings()
+            {
+                Arguments = $"-create {x866BuildDirectory}/bin/ffmpeg {arm64BuildDirectory}/bin/ffmpeg -output {absoluteArtifactDir}/ffmpeg"
+            });
+        }
+        else if (buildx8664)
+        {
+            context.CopyFile($"{x866BuildDirectory}/bin/ffmpeg", $"{absoluteArtifactDir}/ffmpeg");
+        }
+        else
+        {
+            context.CopyFile($"{arm64BuildDirectory}/bin/ffmpeg", $"{absoluteArtifactDir}/ffmpeg");
+        }
     }
 }

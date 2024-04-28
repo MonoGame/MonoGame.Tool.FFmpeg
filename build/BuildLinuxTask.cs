@@ -3,30 +3,40 @@ namespace BuildScripts;
 [TaskName("Build Linux")]
 [IsDependentOn(typeof(PrepTask))]
 [IsDependeeOf(typeof(BuildToolTask))]
-public sealed class BuildLinuxTask : FrostingTask<BuildContext>
+public sealed class BuildLinuxTask : BuildTaskBase
 {
     public override bool ShouldRun(BuildContext context) => context.IsRunningOnLinux();
 
     public override void Run(BuildContext context)
     {
-        //  Patch vcpkg files for linux build
-        context.StartProcess("patch", "./buildscripts/vcpkg/ports/ffmpeg/portfile.cmake ./patches/ffmpeg-portfile.patch");
-        context.StartProcess("patch", "./buildscripts/vcpkg/triplets/x64-linux.cmake ./patches/x64-linux-cmake.patch");
+        // Absolute path to the artifact directory is needed for flags since they don't allow relative path
+        var absoluteArtifactDir = context.MakeAbsolute(new DirectoryPath(context.ArtifactsDir));
 
-        //  Bootstrap vcpkg
-        context.StartProcess("buildscripts/vcpkg/bootstrap-vcpkg.sh");
+        // Generate common build directory path
+        var buildDirectory = $"{absoluteArtifactDir}/linux-x86_64";
 
-        //  Perform x64-linux build
-        context.StartProcess("buildscripts/vcpkg/vcpkg", "install ffmpeg[mp3lame,vorbis]:x64-linux");
+        // Create the build settings used by each library build
+        var buildSettings = new BuildSettings
+        {
+            ShellCommand = "sh",
+            PrefixFlag = buildDirectory,
+            PkgConfigPath = $"{buildDirectory}/lib/pkgconfig",
+            HostFlag = "x86_64-linux-gnu",
+            CFlags = $"-w -I{buildDirectory}/include",
+            CPPFlags = $"-I{buildDirectory}/include",
+            LDFlags = $"-L{buildDirectory}/lib --static"
+        };
 
-        //  Copy build to artifacts
-        context.CopyFile("buildscripts/vcpkg/installed/x64-linux/tools/ffmpeg/ffmpeg", $"{context.ArtifactsDir}/ffmpeg");
-    }
+        // Get the configuration flags that will be used for the FFMpeg build
+        var ffmpegConfigureFlags = GetFFMpegConfigureFlags(context, "linux-x86_64");
 
-    public override void Finally(BuildContext context)
-    {
-        //  Ensure we revert the patched files so when running/testing locally they are put back in original state
-        context.StartProcess("patch", "-R ./buildscripts/vcpkg/ports/ffmpeg/portfile.cmake ./patches/ffmpeg-portfile.patch");
-        context.StartProcess("patch", "-R ./buildscripts/vcpkg/triplets/x64-linux.cmake ./patches/x64-linux-cmake.patch");
+        // Build each library in correct order
+        BuildOgg(context, buildSettings);
+        BuildVorbis(context, buildSettings);
+        BuildLame(context, buildSettings);
+        BuildFFMpeg(context, buildSettings, ffmpegConfigureFlags);
+
+        // Move the built binary from the build directory to the artifact directory
+        context.MoveFile($"{buildDirectory}/bin/ffmpeg", $"{absoluteArtifactDir}/ffmpeg");
     }
 }
