@@ -25,7 +25,7 @@ public sealed class BuildWindowsTask : BuildTaskBase
         var ccFlagsExport = "export CCFLAGS=\"x86_64-w64-mingw32-gcc\";";
         var ldFlagsExport = "export LDFLAGS=\"--static\";";
         var pathExport = "export PATH=\"/usr/bin:/mingw64/bin:$PATH\";";
-        var pkgConfigExport = "export PKG_CONFIG_PATH=\"/mingw64/lib/pkgconfig:$PKG_CONFIG_PATH\";";
+        var pkgConfigExport = $"export PKG_CONFIG_PATH=\"{dependencyDir}/lib/pkgconfig:$PKG_CONFIG_PATH\";";
         var exports = $"{pathExport}{cFlagsExport}{ccFlagsExport}{ldFlagsExport}{pkgConfigExport}";
 
         // The --prefix flag used for all ./configure commands to ensure that build dependencies are output to the
