@@ -10,9 +10,6 @@
 [submodule "vorbis"]
 	path = vorbis
 	url = https://gitlab.xiph.org/xiph/vorbis.git
-[submodule "MonoGame.Mirror.Lame"]
-	path = MonoGame.Mirror.Lame
-	url = https://github.com/MonoGame/MonoGame.Mirror.Lame
 [submodule "ogg"]
 	path = ogg
 	url = https://gitlab.xiph.org/xiph/ogg.git
