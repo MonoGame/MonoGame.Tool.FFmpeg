@@ -5,7 +5,7 @@ namespace BuildScripts;
 [TaskName("Build macOS")]
 [IsDependentOn(typeof(PrepTask))]
 [IsDependeeOf(typeof(BuildToolTask))]
-public sealed class BuildMacOSTask : BuildTaskBase
+public sealed class BuildMacOSTask : FrostingTask<BuildContext>
 {
     public override bool ShouldRun(BuildContext context) => context.IsRunningOnMacOs();
 
@@ -35,7 +35,7 @@ public sealed class BuildMacOSTask : BuildTaskBase
                 Arguments = $"-create ffmpeg-x64 ffmpeg-arm64 -output ffmpeg"
             });
 
-            //  Remove the individual binaries now 
+            // Remove the individual binaries now 
             context.StartProcess("rm", new ProcessSettings()
             {
                 WorkingDirectory = context.ArtifactsDir,
@@ -47,7 +47,7 @@ public sealed class BuildMacOSTask : BuildTaskBase
     public override void Finally(BuildContext context)
     {
         // Only need to revert patch when running locally and testing over and over.
-        if(context.BuildSystem().IsLocalBuild)
+        if (context.BuildSystem().IsLocalBuild)
         {
             context.StartProcess("patch", "-R ./vorbis/configure.ac ./patches/001-libvorbis-remove-force_cpusubtype_ALL.patch");
         }
@@ -199,5 +199,13 @@ public sealed class BuildMacOSTask : BuildTaskBase
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"make install\"";
         context.StartProcess(shellCommandPath, processSettings);
+    }
+
+    private static string GetFFMpegConfigureFlags(BuildContext context, string rid)
+    {
+        var ignoreCommentsAndNewLines = (string line) => !line.StartsWith('#') && !line.StartsWith(' ');
+        var configureFlags = context.FileReadLines("ffmpeg.config").Where(ignoreCommentsAndNewLines);
+        var osConfigureFlags = context.FileReadLines($"ffmpeg.{rid}.config").Where(ignoreCommentsAndNewLines);
+        return string.Join(' ', configureFlags) + " " + string.Join(' ', osConfigureFlags);
     }
 }

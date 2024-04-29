@@ -3,7 +3,7 @@ namespace BuildScripts;
 [TaskName("Build Windows")]
 [IsDependentOn(typeof(PrepTask))]
 [IsDependeeOf(typeof(BuildToolTask))]
-public sealed class BuildWindowsTask : BuildTaskBase
+public sealed class BuildWindowsTask : FrostingTask<BuildContext>
 {
     public override bool ShouldRun(BuildContext context) => context.IsRunningOnWindows();
 
@@ -32,11 +32,11 @@ public sealed class BuildWindowsTask : BuildTaskBase
         // dependency directory specified
         var prefixFlag = $"--prefix=\"{dependencyDir}\"";
 
-        //  The --bindir flag used in the final ffmpeg build so that the binary is output to the artifacts directory.
+        // The --bindir flag used in the final ffmpeg build so that the binary is output to the artifacts directory.
         var binDirFlag = $"--bindir=\"{artifactDir}\"";
 
         // Get the FFMpeg ./configure flags specific for this windows build
-        var configureFlags = GetFFMpegConfigureFlags(context, "windows-x64");
+        var configureFlags = GetFFMpegConfigureFlags(context);
 
         // The command to execute in order to run the shell environment (mingw) needed for this build.
         var shellCommandPath = @"C:\msys64\usr\bin\bash.exe";
@@ -82,7 +82,7 @@ public sealed class BuildWindowsTask : BuildTaskBase
         processSettings.Arguments = $"-c \"{exports} make install\"";
         context.StartProcess(shellCommandPath, processSettings);
 
-         // Build ffmpeg
+        // Build ffmpeg
         processSettings.WorkingDirectory = "./ffmpeg";
         processSettings.Arguments = $"-c \"{exports} make distclean\"";
         context.StartProcess(shellCommandPath, processSettings);
@@ -92,5 +92,13 @@ public sealed class BuildWindowsTask : BuildTaskBase
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"{exports} make install\"";
         context.StartProcess(shellCommandPath, processSettings);
+    }
+
+    private static string GetFFMpegConfigureFlags(BuildContext context)
+    {
+        var ignoreCommentsAndNewLines = (string line) => !line.StartsWith('#') && !line.StartsWith(' ');
+        var configureFlags = context.FileReadLines("ffmpeg.config").Where(ignoreCommentsAndNewLines);
+        var osConfigureFlags = context.FileReadLines($"ffmpeg.windows-x64.config").Where(ignoreCommentsAndNewLines);
+        return string.Join(' ', configureFlags) + " " + string.Join(' ', osConfigureFlags);
     }
 }

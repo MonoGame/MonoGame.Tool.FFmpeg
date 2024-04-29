@@ -3,7 +3,7 @@ namespace BuildScripts;
 [TaskName("Build Linux")]
 [IsDependentOn(typeof(PrepTask))]
 [IsDependeeOf(typeof(BuildToolTask))]
-public sealed class BuildLinuxTask : BuildTaskBase
+public sealed class BuildLinuxTask : FrostingTask<BuildContext>
 {
     public override bool ShouldRun(BuildContext context) => context.IsRunningOnLinux();
 
@@ -24,7 +24,7 @@ public sealed class BuildLinuxTask : BuildTaskBase
             {"PKG_CONFIG_PATH", $"{dependencyDir}/lib/pkgconfig"}
         };
 
-        var configureFlags = GetFFMpegConfigureFlags(context, "linux-x64");
+        var configureFlags = GetFFMpegConfigureFlags(context);
         var processSettings = new ProcessSettings();
 
         var shellCommandPath = "sh";
@@ -77,5 +77,13 @@ public sealed class BuildLinuxTask : BuildTaskBase
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"make install\"";
         context.StartProcess(shellCommandPath, processSettings);
+    }
+
+    private static string GetFFMpegConfigureFlags(BuildContext context)
+    {
+        var ignoreCommentsAndNewLines = (string line) => !line.StartsWith('#') && !line.StartsWith(' ');
+        var configureFlags = context.FileReadLines("ffmpeg.config").Where(ignoreCommentsAndNewLines);
+        var osConfigureFlags = context.FileReadLines($"ffmpeg.linux-x64.config").Where(ignoreCommentsAndNewLines);
+        return string.Join(' ', configureFlags) + " " + string.Join(' ', osConfigureFlags);
     }
 }
