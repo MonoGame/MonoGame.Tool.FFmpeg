@@ -11,6 +11,11 @@ public sealed class BuildMacOSTask : BuildTaskBase
 
     public override void Run(BuildContext context)
     {
+        // There is an issue with the configure.ac script for mac where it uses the -force_cpusubtype_ALL flag which was
+        // only valid for powerpc macs.  There is an issue opened at https://gitlab.xiph.org/xiph/vorbis/-/issues/2348
+        // for reference.  For now, we'll just patch the flag out
+        context.StartProcess("patch", "./vorbis/configure.ac ./patches/001-libvorbis-remove-force_cpusubtype_ALL.patch");
+
         // Determine which mac architecture(s) to build for.
         var buildX64 = context.IsUniversalBinary || RuntimeInformation.ProcessArchitecture is not Architecture.Arm or Architecture.Arm64;
         var buildArm64 = context.IsUniversalBinary || RuntimeInformation.ProcessArchitecture is Architecture.Arm or Architecture.Arm64;
@@ -36,6 +41,15 @@ public sealed class BuildMacOSTask : BuildTaskBase
                 WorkingDirectory = context.ArtifactsDir,
                 Arguments = $"-f ffmpeg-x64 ffmpeg-arm64"
             });
+        }
+    }
+
+    public override void Finally(BuildContext context)
+    {
+        // Only need to revert patch when running locally and testing over and over.
+        if(context.BuildSystem().IsLocalBuild)
+        {
+            context.StartProcess("patch", "-R ./vorbis/configure.ac ./patches/001-libvorbis-remove-force_cpusubtype_ALL.patch");
         }
     }
 
