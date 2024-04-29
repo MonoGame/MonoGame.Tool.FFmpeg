@@ -81,7 +81,7 @@ public sealed class BuildLinuxTask : FrostingTask<BuildContext>
 
     private static string GetFFMpegConfigureFlags(BuildContext context)
     {
-        var ignoreCommentsAndNewLines = (string line) => !line.StartsWith('#') && !line.StartsWith(' ');
+        var ignoreCommentsAndNewLines = (string line) => !string.IsNullOrWhiteSpace(line) && !line.StartsWith('#');
         var configureFlags = context.FileReadLines("ffmpeg.config").Where(ignoreCommentsAndNewLines);
         var osConfigureFlags = context.FileReadLines($"ffmpeg.linux-x64.config").Where(ignoreCommentsAndNewLines);
         return string.Join(' ', configureFlags) + " " + string.Join(' ', osConfigureFlags);
