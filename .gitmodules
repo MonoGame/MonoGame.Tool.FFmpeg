@@ -13,3 +13,6 @@
 [submodule "ogg"]
 	path = ogg
 	url = https://gitlab.xiph.org/xiph/ogg.git
+[submodule "lame"]
+	path = lame
+	url = https://github.com/monogame/monogame.mirror.lame
