@@ -26,12 +26,12 @@ public sealed class BuildLinuxTask : FrostingTask<BuildContext>
 
         var configureFlags = GetFFMpegConfigureFlags(context);
         var processSettings = new ProcessSettings();
+        processSettings.EnvironmentVariables = envVariables;
 
         var shellCommandPath = "sh";
 
         // Build libogg
         processSettings.WorkingDirectory = "./ogg";
-        processSettings.EnvironmentVariables = envVariables;
         processSettings.Arguments = $"-c \"make distclean\"";
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"./autogen.sh\"";
