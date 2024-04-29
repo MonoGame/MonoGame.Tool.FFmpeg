@@ -28,7 +28,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: bash
         run:  |
-          C:\\msys64\\usr\\bin\\bash.exe -c 'export PATH="/usr/bin:/mingw64/bin:$PATH"; pacman -S --needed --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkg-config nasm yasm make base-devel autoconf automake libtool'
+          C:\\msys64\\usr\\bin\\bash.exe -c 'export PATH="/usr/bin:/mingw64/bin:$PATH"; pacman -S --needed --noconfirm mingw-w64-x86_64-toolchain mingw-w64-x86_64-mpg123 mingw-w64-x86_64-gtk2 mingw-w64-x86_64-libogg mingw-w64-x86_64-libvorbis mingw-w64-x86_64-lame mingw-w64-x86_64-pkg-config nasm yasm make base-devel autoconf automake libtool'
       - name: Clone repository
         uses: actions/checkout@v4
         with:
