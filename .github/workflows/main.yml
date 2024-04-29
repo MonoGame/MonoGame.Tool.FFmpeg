@@ -58,6 +58,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Rename License File
+        run: mv ./ffmpeg/COPYING.GPLv2 ./ffmpeg/LICENSE
+
       - name: Run CAKE
         run: dotnet run --project ./build/Build.csproj -- --target=Package --universalBinary=true --toolname=FFMpeg --executablename=ffmpeg --commandname=mgcb-ffmpeg --licensepath=ffmpeg/LICENSE
         env:
