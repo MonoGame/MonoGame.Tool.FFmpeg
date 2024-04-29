@@ -10,7 +10,17 @@ public sealed class BuildWindowsTask : BuildTaskBase
     public override void Run(BuildContext context)
     {
         // Absolute path to the artifact directory is needed for flags since they don't allow relative path
-        var absoluteArtifactDir = context.MakeAbsolute(new DirectoryPath(context.ArtifactsDir)).ToString();
+        var artifactDir = context.MakeAbsolute(new DirectoryPath(context.ArtifactsDir));
+
+        // The directory that all dependencies that are built manually are output too. Originally this was output to the
+        // artifacts directory but that started causing issues on the github runners, so it was moved back to the
+        // project root directory.
+        var dependencyDir = context.MakeAbsolute(new DirectoryPath($"{context.ArtifactsDir}/../dependencies-windows-x64"));
+
+        // For Windows build, since we're using  mingw environment, we can't set environment variables as normal
+        // since they would be set for the Windows side of things and not the mingw environment that everything is
+        // running in.  Instead, we'll build an export statement that can be used at the start of every process call to
+        // ensure the correct environment variables are set for each command executed.
         var cFlagsExport = "export CFLAGS=\"-w\";";
         var ccFlagsExport = "export CCFLAGS=\"x86_64-w64-mingw32-gcc\";";
         var ldFlagsExport = "export LDFLAGS=\"--static\";";
@@ -18,26 +28,68 @@ public sealed class BuildWindowsTask : BuildTaskBase
         var pkgConfigExport = "export PKG_CONFIG_PATH=\"/mingw64/lib/pkgconfig:$PKG_CONFIG_PATH\";";
         var exports = $"{pathExport}{cFlagsExport}{ccFlagsExport}{ldFlagsExport}{pkgConfigExport}";
 
+        // The --prefix flag used for all ./configure commands to ensure that build dependencies are output to the
+        // dependency directory specified
+        var prefixFlag = $"--prefix=\"{dependencyDir}\"";
+
+        //  The --bindir flag used in the final ffmpeg build so that the binary is output to the artifacts directory.
+        var binDirFlag = $"--bindir=\"{artifactDir}\"";
+
+        // Get the FFMpeg ./configure flags specific for this windows build
         var configureFlags = GetFFMpegConfigureFlags(context, "windows-x64");
-        var processSettings = new ProcessSettings() { WorkingDirectory = "./ffmpeg" };
+
+        // The command to execute in order to run the shell environment (mingw) needed for this build.
         var shellCommandPath = @"C:\msys64\usr\bin\bash.exe";
 
-        // Ensure clean start if we're running locally and testing over and over
-        if (context.BuildSystem().IsLocalBuild)
-        {
-            processSettings.Arguments = $"-c \"{exports} make distclean\"";
-            context.StartProcess(shellCommandPath, processSettings);
-        }
+        // Reusuable process settings instance. As each dependency is built, we'll adjust the working directory and
+        // arguments of this instance for each command.
+        var processSettings = new ProcessSettings() { WorkingDirectory = "./ffmpeg" };
 
-        // Run configure to build make file
-        processSettings.Arguments = $"-c \"{exports} ./configure --bindir={absoluteArtifactDir} {configureFlags}\"";
+        // Build libogg
+        processSettings.WorkingDirectory = "./ogg";
+        processSettings.Arguments = $"-c \"{exports} make distclean\"";
         context.StartProcess(shellCommandPath, processSettings);
-
-        // Run make
+        processSettings.Arguments = $"-c \"{exports} ./autogen.sh\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"{exports} ./configure --disable-shared {prefixFlag}\"";
+        context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"{exports} make -j{Environment.ProcessorCount}\"";
         context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"{exports} make install\"";
+        context.StartProcess(shellCommandPath, processSettings);
 
-        // Run make install
+        // build libvorbis
+        processSettings.WorkingDirectory = "./vorbis";
+        processSettings.Arguments = $"-c \"{exports} make distclean\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"{exports} ./autogen.sh\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"{exports} ./configure --disable-examples --disable-docs --disable-shared {prefixFlag}\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"{exports} make -j{Environment.ProcessorCount}\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"{exports} make install\"";
+        context.StartProcess(shellCommandPath, processSettings);
+
+        // build lame
+        processSettings.WorkingDirectory = "./lame";
+        processSettings.Arguments = $"-c \"{exports} make distclean\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"{exports} ./configure --disable-frontend --disable-decoder --disable-shared {prefixFlag}\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"{exports} make -j{Environment.ProcessorCount}\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"{exports} make install\"";
+        context.StartProcess(shellCommandPath, processSettings);
+
+         // Build ffmpeg
+        processSettings.WorkingDirectory = "./ffmpeg";
+        processSettings.Arguments = $"-c \"{exports} make distclean\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"{exports} ./configure {binDirFlag} {configureFlags}\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"{exports} make -j{Environment.ProcessorCount}\"";
+        context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"{exports} make install\"";
         context.StartProcess(shellCommandPath, processSettings);
     }
