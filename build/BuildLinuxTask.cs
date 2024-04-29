@@ -10,33 +10,72 @@ public sealed class BuildLinuxTask : BuildTaskBase
     public override void Run(BuildContext context)
     {
         // Absolute path to the artifact directory is needed for flags since they don't allow relative path
-        var absoluteArtifactDir = context.MakeAbsolute(new DirectoryPath(context.ArtifactsDir));
+        var artifactDir = context.MakeAbsolute(new DirectoryPath(context.ArtifactsDir));
+        var dependencyDir = context.MakeAbsolute(new DirectoryPath($"{context.ArtifactsDir}/../dependencies-linux-x64"));
+        var prefixFlag = $"--prefix=\"{dependencyDir}\"";
+        var hostFlag = "--host=\"x86_64-linux-gnu\"";
+        var binDirFlag = $"--bindir=\"{artifactDir}\"";
 
-        // Generate common build directory path
-        var buildDirectory = $"{absoluteArtifactDir}/linux-x86_64";
-
-        // Create the build settings used by each library build
-        var buildSettings = new BuildSettings
+        var envVariables = new Dictionary<string, string>
         {
-            ShellCommand = "sh",
-            PrefixFlag = buildDirectory,
-            PkgConfigPath = $"{buildDirectory}/lib/pkgconfig",
-            HostFlag = "x86_64-linux-gnu",
-            CFlags = $"-w -I{buildDirectory}/include",
-            CPPFlags = $"-I{buildDirectory}/include",
-            LDFlags = $"-L{buildDirectory}/lib --static"
+            {"CFLAGS", $"-w -I{dependencyDir}/include"},
+            {"CPPFLAGS", $"-I{dependencyDir}/include"},
+            {"LDFLAGS", $"--static -L{dependencyDir}/lib"},
+            {"PKG_CONFIG_PATH", $"{dependencyDir}/lib/pkgconfig"}
         };
 
-        // Get the configuration flags that will be used for the FFMpeg build
-        var ffmpegConfigureFlags = GetFFMpegConfigureFlags(context, "linux-x86_64");
+        var configureFlags = GetFFMpegConfigureFlags(context, "linux-x64");
+        var processSettings = new ProcessSettings();
 
-        // Build each library in correct order
-        BuildOgg(context, buildSettings);
-        BuildVorbis(context, buildSettings);
-        BuildLame(context, buildSettings);
-        BuildFFMpeg(context, buildSettings, ffmpegConfigureFlags);
+        var shellCommandPath = "sh";
 
-        // Move the built binary from the build directory to the artifact directory
-        context.MoveFile($"{buildDirectory}/bin/ffmpeg", $"{absoluteArtifactDir}/ffmpeg");
+        // Build libogg
+        processSettings.WorkingDirectory = "./ogg";
+        processSettings.EnvironmentVariables = envVariables;
+        processSettings.Arguments = $"-c \"make distclean\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"./autogen.sh\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"./configure --disable-shared {prefixFlag} {hostFlag}\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"make -j{Environment.ProcessorCount}\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"make install\"";
+        context.StartProcess(shellCommandPath, processSettings);
+
+        // build libvorbis
+        processSettings.WorkingDirectory = "./vorbis";
+        processSettings.Arguments = $"-c \"make distclean\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"./autogen.sh\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"./configure --disable-examples --disable-docs --disable-shared {prefixFlag} {hostFlag}\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"make -j{Environment.ProcessorCount}\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"make install\"";
+        context.StartProcess(shellCommandPath, processSettings);
+
+        // build lame
+        processSettings.WorkingDirectory = "./lame";
+        processSettings.Arguments = $"-c \"make distclean\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"./configure --disable-frontend --disable-decoder --disable-shared {prefixFlag} {hostFlag}\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"make -j{Environment.ProcessorCount}\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"make install\"";
+        context.StartProcess(shellCommandPath, processSettings);
+
+        // Build ffmpeg
+        processSettings.WorkingDirectory = "./ffmpeg";
+        processSettings.Arguments = $"-c \"make distclean\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"./configure {binDirFlag} {configureFlags}\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"make -j{Environment.ProcessorCount}\"";
+        context.StartProcess(shellCommandPath, processSettings);
+        processSettings.Arguments = $"-c \"make install\"";
+        context.StartProcess(shellCommandPath, processSettings);
     }
 }
