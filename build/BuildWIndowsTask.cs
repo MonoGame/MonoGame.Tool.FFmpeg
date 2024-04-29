@@ -43,7 +43,7 @@ public sealed class BuildWindowsTask : FrostingTask<BuildContext>
 
         // Reusuable process settings instance. As each dependency is built, we'll adjust the working directory and
         // arguments of this instance for each command.
-        var processSettings = new ProcessSettings() { WorkingDirectory = "./ffmpeg" };
+        var processSettings = new ProcessSettings();
 
         // Build libogg
         processSettings.WorkingDirectory = "./ogg";
