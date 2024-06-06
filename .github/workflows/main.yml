@@ -76,5 +76,5 @@ jobs:
           tag: ${{ github.ref_name }}
           allowUpdates: true
           removeArtifacts: true
-          artifacts: "bin/Release/*.nupkg"
+          artifacts: "artifacts/**/*.nupkg"
           token: ${{ secrets.GITHUB_TOKEN }}
