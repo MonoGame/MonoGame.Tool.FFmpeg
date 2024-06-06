@@ -35,7 +35,7 @@ public sealed class BuildWindowsTask : FrostingTask<BuildContext>
         // The --bindir flag used in the final ffmpeg build so that the binary is output to the artifacts directory.
         var binDirFlag = $"--bindir=\"{artifactDir}\"";
 
-        // Get the FFMpeg ./configure flags specific for this windows build
+        // Get the FFmpeg ./configure flags specific for this windows build
         var configureFlags = GetFFMpegConfigureFlags(context);
 
         // The command to execute in order to run the shell environment (mingw) needed for this build.
