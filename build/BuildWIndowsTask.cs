@@ -82,10 +82,11 @@ public sealed class BuildWindowsTask : FrostingTask<BuildContext>
         processSettings.Arguments = $"-c \"{exports} make install\"";
         context.StartProcess(shellCommandPath, processSettings);
 
-        // Build ffmpeg
+        // Build ffmpeg (with XAudio2 fix)
         processSettings.WorkingDirectory = "./ffmpeg";
         processSettings.Arguments = $"-c \"{exports} make distclean\"";
         context.StartProcess(shellCommandPath, processSettings);
+        BuildCommon.FFmpegApplyXAudio2Fix(context);
         processSettings.Arguments = $"-c \"{exports} ./configure {binDirFlag} {configureFlags}\"";
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"{exports} make -j{Environment.ProcessorCount}\"";
