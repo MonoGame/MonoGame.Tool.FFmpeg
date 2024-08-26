@@ -108,10 +108,11 @@ public sealed class BuildMacOSTask : FrostingTask<BuildContext>
         processSettings.Arguments = $"-c \"make install\"";
         context.StartProcess(shellCommandPath, processSettings);
 
-        // Build ffmpeg
+        // Build ffmpeg (with XAudio2 fix)
         processSettings.WorkingDirectory = "./ffmpeg";
         processSettings.Arguments = $"-c \"make distclean\"";
         context.StartProcess(shellCommandPath, processSettings);
+        BuildCommon.FFmpegApplyXAudio2Fix(context);
         processSettings.Arguments = $"-c \"./configure {binDirFlag} {configureFlags} {progsSuffixFlag}\"";
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"make -j{Environment.ProcessorCount}\"";
