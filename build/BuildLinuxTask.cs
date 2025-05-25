@@ -9,11 +9,12 @@ public sealed class BuildLinuxTask : FrostingTask<BuildContext>
 
     public override void Run(BuildContext context)
     {
+        var arch = RuntimeInformation.OSArchitecture;
         // Absolute path to the artifact directory is needed for flags since they don't allow relative path
         var artifactDir = context.MakeAbsolute(new DirectoryPath(context.ArtifactsDir));
-        var dependencyDir = context.MakeAbsolute(new DirectoryPath($"{context.ArtifactsDir}/../dependencies-linux-x64"));
+        var dependencyDir = context.MakeAbsolute(new DirectoryPath($"{context.ArtifactsDir}/../dependencies-linux-{(arch == Architecture.Arm64 ? "arm64" : "x64")}"));
         var prefixFlag = $"--prefix=\"{dependencyDir}\"";
-        var hostFlag = "--host=\"x86_64-linux-gnu\"";
+        var hostFlag = arch == Architecture.Arm64 ? "--host=\"aarch64-linux-gnu\"" : "--host=\"x86_64-linux-gnu\"";
         var binDirFlag = $"--bindir=\"{artifactDir}\"";
 
         var envVariables = new Dictionary<string, string>
@@ -83,7 +84,8 @@ public sealed class BuildLinuxTask : FrostingTask<BuildContext>
     {
         var ignoreCommentsAndNewLines = (string line) => !string.IsNullOrWhiteSpace(line) && !line.StartsWith('#');
         var configureFlags = context.FileReadLines("ffmpeg.config").Where(ignoreCommentsAndNewLines);
-        var osConfigureFlags = context.FileReadLines($"ffmpeg.linux-x64.config").Where(ignoreCommentsAndNewLines);
+        var osConfigFile = RuntimeInformation.OSArchitecture == Architecture.Arm64 ? "ffmpeg.linux-arm64.config" : "ffmpeg.linux-x64.config";
+        var osConfigureFlags = context.FileReadLines(osConfigFile).Where(ignoreCommentsAndNewLines);
         return string.Join(' ', configureFlags) + " " + string.Join(' ', osConfigureFlags);
     }
 }
