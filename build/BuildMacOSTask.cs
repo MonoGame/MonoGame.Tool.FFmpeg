@@ -56,10 +56,10 @@ public sealed class BuildMacOSTask : FrostingTask<BuildContext>
 
         var envVariables = new Dictionary<string, string>
         {
-            {"CFLAGS", $"-w -arch arm64 -I{dependencyDir}/include"},
-            {"CPPFLAGS", $"-arch arm64 -I{dependencyDir}/include"},
-            {"CXXFLAGS", "-arch arm64"},
-            {"LDFLAGS", $"-arch arm64 -L{dependencyDir}/lib"},
+            {"CFLAGS", $"-mmacosx-version-min=10.5 -w -arch arm64 -I{dependencyDir}/include"},
+            {"CPPFLAGS", $"-mmacosx-version-min=10.5 -arch arm64 -I{dependencyDir}/include"},
+            {"CXXFLAGS", "-mmacosx-version-min=10.5 -arch arm64"},
+            {"LDFLAGS", $"-mmacosx-version-min=10.5 -arch arm64 -L{dependencyDir}/lib"},
             {"PKG_CONFIG_PATH", $"{dependencyDir}/lib/pkgconfig"}
         };
 
@@ -68,7 +68,6 @@ public sealed class BuildMacOSTask : FrostingTask<BuildContext>
         {
             EnvironmentVariables = envVariables
         };
-        var extraFlags = "--extra-cflags='-mmacosx-version-min=10.9' --extra-ldflags='-mmacosx-version-min=10.9'";
 
         var shellCommandPath = "zsh";
 
@@ -78,7 +77,7 @@ public sealed class BuildMacOSTask : FrostingTask<BuildContext>
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"./autogen.sh\"";
         context.StartProcess(shellCommandPath, processSettings);
-        processSettings.Arguments = $"-c \"./configure --disable-shared {extraFlags} {prefixFlag} {hostFlag}\"";
+        processSettings.Arguments = $"-c \"./configure --disable-shared {prefixFlag} {hostFlag}\"";
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"make -j{Environment.ProcessorCount}\"";
         context.StartProcess(shellCommandPath, processSettings);
@@ -91,7 +90,7 @@ public sealed class BuildMacOSTask : FrostingTask<BuildContext>
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"./autogen.sh\"";
         context.StartProcess(shellCommandPath, processSettings);
-        processSettings.Arguments = $"-c \"./configure --disable-examples --disable-docs --disable-shared {extraFlags} {prefixFlag} {hostFlag}\"";
+        processSettings.Arguments = $"-c \"./configure --disable-examples --disable-docs --disable-shared {prefixFlag} {hostFlag}\"";
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"make -j{Environment.ProcessorCount}\"";
         context.StartProcess(shellCommandPath, processSettings);
@@ -102,7 +101,7 @@ public sealed class BuildMacOSTask : FrostingTask<BuildContext>
         processSettings.WorkingDirectory = "./lame";
         processSettings.Arguments = $"-c \"make distclean\"";
         context.StartProcess(shellCommandPath, processSettings);
-        processSettings.Arguments = $"-c \"./configure --disable-frontend --disable-decoder --disable-shared {extraFlags} {prefixFlag} {hostFlag}\"";
+        processSettings.Arguments = $"-c \"./configure --disable-frontend --disable-decoder --disable-shared {prefixFlag} {hostFlag}\"";
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"make -j{Environment.ProcessorCount}\"";
         context.StartProcess(shellCommandPath, processSettings);
@@ -113,7 +112,7 @@ public sealed class BuildMacOSTask : FrostingTask<BuildContext>
         processSettings.WorkingDirectory = "./ffmpeg";
         processSettings.Arguments = $"-c \"make distclean\"";
         context.StartProcess(shellCommandPath, processSettings);
-        processSettings.Arguments = $"-c \"./configure {binDirFlag} {configureFlags} {extraFlags} {progsSuffixFlag}\"";
+        processSettings.Arguments = $"-c \"./configure {binDirFlag} {configureFlags} {progsSuffixFlag}\"";
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"make -j{Environment.ProcessorCount}\"";
         context.StartProcess(shellCommandPath, processSettings);
@@ -133,10 +132,10 @@ public sealed class BuildMacOSTask : FrostingTask<BuildContext>
 
         var envVariables = new Dictionary<string, string>
         {
-            {"CFLAGS", $"-w -arch x86_64 -I{dependencyDir}/include"},
-            {"CPPFLAGS", $"-arch x86_64 -I{dependencyDir}/include"},
-            {"CXXFLAGS", "-arch x86_64"},
-            {"LDFLAGS", $"-arch x86_64 -L{dependencyDir}/lib"},
+            {"CFLAGS", $"-mmacosx-version-min=10.5 -w -arch x86_64 -I{dependencyDir}/include"},
+            {"CPPFLAGS", $"-mmacosx-version-min=10.5 -arch x86_64 -I{dependencyDir}/include"},
+            {"CXXFLAGS", "-mmacosx-version-min=10.5 -arch x86_64"},
+            {"LDFLAGS", $"-mmacosx-version-min=10.5 -arch x86_64 -L{dependencyDir}/lib"},
             {"PKG_CONFIG_PATH", $"{dependencyDir}/lib/pkgconfig"}
         };
 
@@ -145,7 +144,6 @@ public sealed class BuildMacOSTask : FrostingTask<BuildContext>
         {
             EnvironmentVariables = envVariables
         };
-        var extraFlags = "--extra-cflags='-mmacosx-version-min=10.9' --extra-ldflags='-mmacosx-version-min=10.9'";
 
         var shellCommandPath = "zsh";
 
@@ -155,7 +153,7 @@ public sealed class BuildMacOSTask : FrostingTask<BuildContext>
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"./autogen.sh\"";
         context.StartProcess(shellCommandPath, processSettings);
-        processSettings.Arguments = $"-c \"./configure --disable-shared {extraFlags} {prefixFlag} {hostFlag}\"";
+        processSettings.Arguments = $"-c \"./configure --disable-shared {prefixFlag} {hostFlag}\"";
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"make -j{Environment.ProcessorCount}\"";
         context.StartProcess(shellCommandPath, processSettings);
@@ -168,7 +166,7 @@ public sealed class BuildMacOSTask : FrostingTask<BuildContext>
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"./autogen.sh\"";
         context.StartProcess(shellCommandPath, processSettings);
-        processSettings.Arguments = $"-c \"./configure --disable-examples --disable-docs --disable-shared {extraFlags} {prefixFlag} {hostFlag}\"";
+        processSettings.Arguments = $"-c \"./configure --disable-examples --disable-docs --disable-shared {prefixFlag} {hostFlag}\"";
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"make -j{Environment.ProcessorCount}\"";
         context.StartProcess(shellCommandPath, processSettings);
@@ -179,7 +177,7 @@ public sealed class BuildMacOSTask : FrostingTask<BuildContext>
         processSettings.WorkingDirectory = "./lame";
         processSettings.Arguments = $"-c \"make distclean\"";
         context.StartProcess(shellCommandPath, processSettings);
-        processSettings.Arguments = $"-c \"./configure --disable-frontend --disable-decoder --disable-shared {extraFlags} {prefixFlag} {hostFlag}\"";
+        processSettings.Arguments = $"-c \"./configure --disable-frontend --disable-decoder --disable-shared {prefixFlag} {hostFlag}\"";
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"make -j{Environment.ProcessorCount}\"";
         context.StartProcess(shellCommandPath, processSettings);
@@ -190,7 +188,7 @@ public sealed class BuildMacOSTask : FrostingTask<BuildContext>
         processSettings.WorkingDirectory = "./ffmpeg";
         processSettings.Arguments = $"-c \"make distclean\"";
         context.StartProcess(shellCommandPath, processSettings);
-        processSettings.Arguments = $"-c \"./configure {binDirFlag} {configureFlags} {extraFlags} {progsSuffixFlag}\"";
+        processSettings.Arguments = $"-c \"./configure {binDirFlag} {configureFlags} {progsSuffixFlag}\"";
         context.StartProcess(shellCommandPath, processSettings);
         processSettings.Arguments = $"-c \"make -j{Environment.ProcessorCount}\"";
         context.StartProcess(shellCommandPath, processSettings);
