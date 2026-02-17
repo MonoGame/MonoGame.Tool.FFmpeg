@@ -117,8 +117,8 @@ public sealed class BuildWindowsTask : FrostingTask<BuildContext>
         // ensure the correct environment variables are set for each command executed.
         var depPathUnix = dependencyDir.FullPath.Replace("\\", "/").Replace("C:", "/c");
         var cFlagsExport = $"export CFLAGS='-w -Wno-error=incompatible-pointer-types -I{depPathUnix}/include';";
-        var ccFlagsExport = $"export CC='aarch64-w64-mingw32-clang;";
-        var cxxFlagsExport = $"export CXX='aarch64-w64-mingw32-clang++';";
+        var ccFlagsExport = "export CC='aarch64-w64-mingw32-clang';";
+        var cxxFlagsExport = "export CXX='aarch64-w64-mingw32-clang++';";
         var ldFlagsExport = $"export LDFLAGS='--static -L{depPathUnix}/lib';";
         var pathExport = "export PATH='/c/llvm-mingw/bin:/usr/bin:/mingw64/bin:$PATH';";
         var pkgConfigExport = $"export PKG_CONFIG_PATH='{depPathUnix}/lib/pkgconfig';";
@@ -198,3 +198,4 @@ public sealed class BuildWindowsTask : FrostingTask<BuildContext>
         return string.Join(' ', configureFlags) + " " + string.Join(' ', osConfigureFlags);
     }
 }
+
