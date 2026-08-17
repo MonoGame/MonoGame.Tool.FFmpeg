@@ -11,8 +11,8 @@ public sealed class BuildLinuxTask : FrostingTask<BuildContext>
     {
         var arch = RuntimeInformation.OSArchitecture;
         // Absolute path to the artifact directory is needed for flags since they don't allow relative path
-        var artifactDir = context.MakeAbsolute(new DirectoryPath(context.ArtifactsDir));
-        var dependencyDir = context.MakeAbsolute(new DirectoryPath($"{context.ArtifactsDir}/../dependencies-linux-{(arch == Architecture.Arm64 ? "arm64" : "x64")}"));
+        var artifactDir = context.MakeAbsoluteForDocker(new DirectoryPath(context.ArtifactsDir));
+        var dependencyDir = context.MakeAbsoluteForDocker(new DirectoryPath($"{context.ArtifactsDir}/../dependencies-linux-{(arch == Architecture.Arm64 ? "arm64" : "x64")}"));
         var prefixFlag = $"--prefix=\"{dependencyDir}\"";
         var hostFlag = arch == Architecture.Arm64 ? "--host=\"aarch64-linux-gnu\"" : "--host=\"x86_64-linux-gnu\"";
         var binDirFlag = $"--bindir=\"{artifactDir}\"";
